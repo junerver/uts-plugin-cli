@@ -206,6 +206,28 @@ async function downloadPlugin({ owner, repo, branch, pluginName, targetDir, toke
 }
 
 /**
+ * 增量下载指定文件
+ * @param {object} options
+ * @returns {Promise<string>} 安装路径
+ */
+async function downloadFiles({ owner, repo, branch, pluginName, files, targetDir, token = null }) {
+  const installDir = path.join(targetDir, 'uni_modules', pluginName)
+
+  let downloaded = 0
+  const total = files.length
+
+  for (const file of files) {
+    const filePath = `uni_modules/${pluginName}/${file}`
+    const savePath = path.join(installDir, file)
+    await downloadFile(owner, repo, branch, filePath, savePath, token)
+
+    downloaded++
+  }
+
+  return installDir
+}
+
+/**
  * 获取本地插件版本信息
  * @param {string} pluginPath - 插件目录路径
  * @returns {object} 插件信息
@@ -235,6 +257,7 @@ async function listRemotePlugins({ owner, repo, branch, token = null }) {
 
 module.exports = {
   downloadPlugin,
+  downloadFiles,
   getPluginInfo,
   listRemotePlugins,
   fetchManifest

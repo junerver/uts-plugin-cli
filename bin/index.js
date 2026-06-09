@@ -32,6 +32,7 @@ program
   .description('升级 UTS 插件')
   .option('-b, --branch <branch>', '指定分支')
   .option('-t, --token <token>', 'GitHub token（用于私有仓库或提高 API 限制）')
+  .option('-f, --force', '强制全量更新，跳过文件比对')
   .action(require('../src/commands/update'))
 
 program

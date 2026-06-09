@@ -79,6 +79,30 @@ npx @junerver/uts-plugin-cli u jkr-abc-epay
 npx @junerver/uts-plugin-cli ls
 ```
 
+## 网络代理
+
+如果无法直连 GitHub，可使用代理服务：
+
+### 临时启用代理（PowerShell）
+
+```powershell
+$Env:UTS_PLUGIN_PROXY="true"
+npx @junerver/uts-plugin-cli list
+```
+
+### 临时启用代理（CMD）
+
+```cmd
+set UTS_PLUGIN_PROXY=true
+npx @junerver/uts-plugin-cli list
+```
+
+### 临时启用代理（Linux/Mac）
+
+```bash
+UTS_PLUGIN_PROXY=true npx @junerver/uts-plugin-cli list
+```
+
 ## 插件来源
 
 所有插件来自 GitHub 仓库：[junerver/UtsPlugins](https://github.com/junerver/UtsPlugins)

@@ -1,6 +1,93 @@
 const axios = require('axios')
 const path = require('path')
 const fs = require('fs')
+const config = require('../config')
+
+/**
+ * 获取 raw.githubusercontent.com 的 URL（支持代理）
+ * @param {string} owner - GitHub 用户名
+ * @param {string} repo - 仓库名
+ * @param {string} branch - 分支名
+ * @param {string} filePath - 文件路径
+ * @returns {string} URL
+ */
+function getRawUrl(owner, repo, branch, filePath) {
+  const rawBase = getRawBaseUrl()
+  return `${rawBase}/${owner}/${repo}/${branch}/${filePath}`
+}
+
+/**
+ * 获取 raw 基础 URL（支持代理）
+ * @returns {string}
+ */
+function getRawBaseUrl() {
+  const proxyConfig = config.proxy
+  
+  if (proxyConfig.enabled === 'true') {
+    return proxyConfig.raw
+  }
+  
+  // 默认使用原生地址
+  return 'https://raw.githubusercontent.com'
+}
+
+/**
+ * 获取 API 基础 URL（支持代理）
+ * @returns {string}
+ */
+function getApiBaseUrl() {
+  const proxyConfig = config.proxy
+  
+  if (proxyConfig.enabled === 'true') {
+    return proxyConfig.api
+  }
+  
+  return 'https://api.github.com'
+}
+
+/**
+ * 测试 GitHub 连接
+ * @returns {Promise<boolean>}
+ */
+async function testGitHubConnection() {
+  try {
+    await axios.get('https://raw.githubusercontent.com', {
+      timeout: 5000,
+      headers: { 'User-Agent': 'uts-plugin-cli' }
+    })
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
+/**
+ * 获取代理配置（自动检测）
+ * @returns {Promise<string>} 'direct' | 'proxy'
+ */
+async function getProxyMode() {
+  const proxyConfig = config.proxy
+  
+  if (proxyConfig.enabled === 'true') {
+    return 'proxy'
+  }
+  
+  if (proxyConfig.enabled === 'false') {
+    return 'direct'
+  }
+  
+  // auto 模式：测试连接
+  console.log('正在检测 GitHub 连接...')
+  const canConnect = await testGitHubConnection()
+  
+  if (canConnect) {
+    console.log('✓ GitHub 直连正常')
+    return 'direct'
+  } else {
+    console.log('⚠ 无法直连 GitHub，使用代理服务')
+    return 'proxy'
+  }
+}
 
 /**
  * 从 GitHub 仓库下载 plugins.json manifest
@@ -8,7 +95,14 @@ const fs = require('fs')
  * @returns {Promise<object>} manifest 内容
  */
 async function fetchManifest({ owner, repo, branch, token = null }) {
-  const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`
+  const proxyMode = await getProxyMode()
+  let url
+  
+  if (proxyMode === 'proxy') {
+    url = getRawUrl(owner, repo, branch, 'plugins.json')
+  } else {
+    url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`
+  }
 
   try {
     const response = await axios.get(url, {
@@ -19,7 +113,9 @@ async function fetchManifest({ owner, repo, branch, token = null }) {
     throw new Error(
       `无法获取插件清单，请检查仓库配置\n` +
       `仓库：${owner}/${repo}\n` +
-      `确保仓库根目录存在 plugins.json 文件`
+      `确保仓库根目录存在 plugins.json 文件\n` +
+      `如果网络问题，请尝试设置代理：\n` +
+      `  $Env:UTS_PLUGIN_PROXY="true"`
     )
   }
 }
@@ -33,7 +129,7 @@ async function fetchManifest({ owner, repo, branch, token = null }) {
  * @param {string} savePath - 本地保存路径
  */
 async function downloadFromRaw(owner, repo, branch, filePath, savePath) {
-  const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`
+  const url = getRawUrl(owner, repo, branch, filePath)
 
   const response = await axios.get(url, {
     responseType: 'arraybuffer',

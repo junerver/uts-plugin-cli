@@ -4,8 +4,8 @@
   "description": "UTS 插件管理工具 - 从 GitHub 仓库安装 uni-app 原生插件",
   "main": "index.js",
   "bin": {
-    "uts-plugin": "./bin/index.js",
-    "uts-plugin-cli": "./bin/index.js"
+    "uts-plugin": "bin/index.js",
+    "uts-plugin-cli": "bin/index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -30,7 +30,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/junerver/UtsPlugins.git"
+    "url": "git+https://github.com/junerver/UtsPlugins.git"
   },
   "homepage": "https://github.com/junerver/UtsPlugins",
   "engines": {

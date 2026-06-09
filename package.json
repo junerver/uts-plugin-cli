@@ -1,0 +1,39 @@
+{
+  "name": "@junerver/uts-plugin-cli",
+  "version": "1.0.0",
+  "description": "UTS 插件管理工具 - 从 GitHub 仓库安装 uni-app 原生插件",
+  "main": "index.js",
+  "bin": {
+    "uts-plugin": "./bin/index.js",
+    "uts-plugin-cli": "./bin/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "uts",
+    "uni-app",
+    "plugin",
+    "harmony",
+    "鸿蒙",
+    "cli"
+  ],
+  "author": "junerver",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "axios": "^1.9.0",
+    "chalk": "^4.1.2",
+    "commander": "^13.1.0",
+    "ora": "^5.4.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/junerver/UtsPlugins.git"
+  },
+  "homepage": "https://github.com/junerver/UtsPlugins",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

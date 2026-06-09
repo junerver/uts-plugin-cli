@@ -4,156 +4,156 @@ const fs = require('fs')
 const config = require('../config')
 
 /**
- * 获取 raw.githubusercontent.com 的 URL（支持代理）
- * @param {string} owner - GitHub 用户名
- * @param {string} repo - 仓库名
- * @param {string} branch - 分支名
- * @param {string} filePath - 文件路径
- * @returns {string} URL
+ * 创建 axios 实例（支持代理）
+ * @param {string} token - GitHub token（可选）
+ * @returns {object} axios 实例
  */
-function getRawUrl(owner, repo, branch, filePath) {
-  const rawBase = getRawBaseUrl()
-  return `${rawBase}/${owner}/${repo}/${branch}/${filePath}`
+function createAxiosInstance(token = null) {
+  const axiosConfig = {
+    headers: {
+      'User-Agent': 'uts-plugin-cli',
+      'Accept': 'application/json'
+    },
+    timeout: 15000
+  }
+
+  if (token) {
+    axiosConfig.headers['Authorization'] = `token ${token}`
+  }
+
+  // 检查环境变量中的 HTTP 代理
+  const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy
+
+  if (httpsProxy) {
+    // 使用代理
+    const { URL } = require('url')
+    try {
+      const proxyUrl = new URL(httpsProxy)
+      axiosConfig.proxy = {
+        host: proxyUrl.hostname,
+        port: parseInt(proxyUrl.port) || (proxyUrl.protocol === 'https:' ? 443 : 80),
+        protocol: proxyUrl.protocol
+      }
+    } catch (e) {
+      // 忽略无效的代理 URL
+    }
+  }
+
+  return axios.create(axiosConfig)
 }
 
 /**
- * 获取 raw 基础 URL（支持代理）
- * @returns {string}
- */
-function getRawBaseUrl() {
-  const proxyConfig = config.proxy
-  
-  if (proxyConfig.enabled === 'true') {
-    return proxyConfig.raw
-  }
-  
-  // 默认使用原生地址
-  return 'https://raw.githubusercontent.com'
-}
-
-/**
- * 获取 API 基础 URL（支持代理）
- * @returns {string}
- */
-function getApiBaseUrl() {
-  const proxyConfig = config.proxy
-  
-  if (proxyConfig.enabled === 'true') {
-    return proxyConfig.api
-  }
-  
-  return 'https://api.github.com'
-}
-
-/**
- * 测试 GitHub 连接
- * @returns {Promise<boolean>}
- */
-async function testGitHubConnection() {
-  try {
-    await axios.get('https://raw.githubusercontent.com', {
-      timeout: 5000,
-      headers: { 'User-Agent': 'uts-plugin-cli' }
-    })
-    return true
-  } catch (error) {
-    return false
-  }
-}
-
-/**
- * 获取代理配置（自动检测）
- * @returns {Promise<string>} 'direct' | 'proxy'
- */
-async function getProxyMode() {
-  const proxyConfig = config.proxy
-  
-  if (proxyConfig.enabled === 'true') {
-    return 'proxy'
-  }
-  
-  if (proxyConfig.enabled === 'false') {
-    return 'direct'
-  }
-  
-  // auto 模式：测试连接
-  console.log('正在检测 GitHub 连接...')
-  const canConnect = await testGitHubConnection()
-  
-  if (canConnect) {
-    console.log('✓ GitHub 直连正常')
-    return 'direct'
-  } else {
-    console.log('⚠ 无法直连 GitHub，使用代理服务')
-    return 'proxy'
-  }
-}
-
-/**
- * 从 GitHub 仓库下载 plugins.json manifest
+ * 获取插件清单
  * @param {object} options
  * @returns {Promise<object>} manifest 内容
  */
 async function fetchManifest({ owner, repo, branch, token = null }) {
-  const proxyMode = await getProxyMode()
-  let url
-  
-  if (proxyMode === 'proxy') {
-    url = getRawUrl(owner, repo, branch, 'plugins.json')
-  } else {
-    url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`
+  const instance = createAxiosInstance(token)
+
+  // 尝试多个来源获取 plugins.json
+  const sources = [
+    // 1. 直接访问 raw.githubusercontent.com
+    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`,
+    // 2. 使用代理服务
+    `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`,
+    // 3. 使用另一个代理服务
+    `https://raw.gitmirror.com/${owner}/${repo}/${branch}/plugins.json`
+  ]
+
+  let lastError = null
+
+  for (const url of sources) {
+    try {
+      const response = await instance.get(url)
+      if (response.data && typeof response.data === 'object' && response.data.plugins) {
+        return response.data
+      }
+    } catch (error) {
+      lastError = error
+      // 继续尝试下一个来源
+    }
   }
 
+  // 如果所有来源都失败，尝试使用 GitHub API
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/plugins.json?ref=${branch}`
   try {
-    const response = await axios.get(url, {
-      headers: { 'User-Agent': 'uts-plugin-cli' }
-    })
-    return response.data
+    const response = await instance.get(apiUrl)
+    const content = Buffer.from(response.data.content, 'base64').toString('utf-8')
+    return JSON.parse(content)
   } catch (error) {
-    throw new Error(
-      `无法获取插件清单，请检查仓库配置\n` +
-      `仓库：${owner}/${repo}\n` +
-      `确保仓库根目录存在 plugins.json 文件\n` +
-      `如果网络问题，请尝试设置代理：\n` +
-      `  $Env:UTS_PLUGIN_PROXY="true"`
-    )
+    lastError = error
   }
+
+  throw new Error(
+    `无法获取插件清单\n\n` +
+    `请尝试以下解决方案：\n` +
+    `1. 设置 HTTP 代理：\n` +
+    `   PowerShell: $Env:HTTPS_PROXY="http://127.0.0.1:7890"\n` +
+    `   CMD: set HTTPS_PROXY=http://127.0.0.1:7890\n` +
+    `   Linux/Mac: export HTTPS_PROXY=http://127.0.0.1:7890\n\n` +
+    `2. 或使用 GitHub token（推荐）：\n` +
+    `   npx @junerver/uts-plugin-cli list --token ghp_xxxx\n\n` +
+    `仓库：${owner}/${repo}`
+  )
 }
 
 /**
- * 使用 raw.githubusercontent.com 下载文件
+ * 下载单个文件
  * @param {string} owner - GitHub 用户名
  * @param {string} repo - 仓库名
  * @param {string} branch - 分支名
  * @param {string} filePath - 文件路径
  * @param {string} savePath - 本地保存路径
+ * @param {string} token - GitHub token（可选）
  */
-async function downloadFromRaw(owner, repo, branch, filePath, savePath) {
-  const url = getRawUrl(owner, repo, branch, filePath)
+async function downloadFile(owner, repo, branch, filePath, savePath, token = null) {
+  const instance = createAxiosInstance(token)
 
-  const response = await axios.get(url, {
-    responseType: 'arraybuffer',
-    headers: { 'User-Agent': 'uts-plugin-cli' }
-  })
+  // 尝试多个来源下载
+  const sources = [
+    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`,
+    `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`,
+    `https://raw.gitmirror.com/${owner}/${repo}/${branch}/${filePath}`
+  ]
 
-  // 确保目录存在
-  const dir = path.dirname(savePath)
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
+  for (const url of sources) {
+    try {
+      const response = await instance.get(url, { responseType: 'arraybuffer' })
+
+      // 确保目录存在
+      const dir = path.dirname(savePath)
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true })
+      }
+
+      fs.writeFileSync(savePath, Buffer.from(response.data))
+      return
+    } catch (error) {
+      // 继续尝试下一个来源
+    }
   }
 
-  fs.writeFileSync(savePath, Buffer.from(response.data))
+  // 如果所有来源都失败，尝试使用 GitHub API
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`
+  try {
+    const response = await instance.get(apiUrl)
+
+    const dir = path.dirname(savePath)
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
+
+    const content = Buffer.from(response.data.content, 'base64')
+    fs.writeFileSync(savePath, content)
+    return
+  } catch (error) {
+    throw new Error(`下载失败：${filePath}`)
+  }
 }
 
 /**
  * 从 GitHub 下载指定插件目录
  * @param {object} options
- * @param {string} options.owner - GitHub 用户名
- * @param {string} options.repo - 仓库名
- * @param {string} options.branch - 分支名
- * @param {string} options.pluginName - 插件名称
- * @param {string} options.targetDir - 目标目录
- * @param {string} options.token - GitHub token（可选，私有仓库需要）
  * @returns {Promise<string>} 安装路径
  */
 async function downloadPlugin({ owner, repo, branch, pluginName, targetDir, token = null }) {
@@ -176,7 +176,7 @@ async function downloadPlugin({ owner, repo, branch, pluginName, targetDir, toke
   for (const file of pluginInfo.files) {
     const filePath = `uni_modules/${pluginName}/${file}`
     const savePath = path.join(installDir, file)
-    await downloadFromRaw(owner, repo, branch, filePath, savePath)
+    await downloadFile(owner, repo, branch, filePath, savePath, token)
   }
 
   return installDir

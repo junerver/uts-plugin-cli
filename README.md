@@ -81,26 +81,27 @@ npx @junerver/uts-plugin-cli ls
 
 ## 网络代理
 
-如果无法直连 GitHub，可使用代理服务：
+如果无法访问 GitHub，可设置 HTTP 代理：
 
-### 临时启用代理（PowerShell）
+### PowerShell
 
 ```powershell
-$Env:UTS_PLUGIN_PROXY="true"
+$Env:HTTPS_PROXY="http://127.0.0.1:7890"
 npx @junerver/uts-plugin-cli list
 ```
 
-### 临时启用代理（CMD）
+### CMD
 
 ```cmd
-set UTS_PLUGIN_PROXY=true
+set HTTPS_PROXY=http://127.0.0.1:7890
 npx @junerver/uts-plugin-cli list
 ```
 
-### 临时启用代理（Linux/Mac）
+### Linux/Mac
 
 ```bash
-UTS_PLUGIN_PROXY=true npx @junerver/uts-plugin-cli list
+export HTTPS_PROXY=http://127.0.0.1:7890
+npx @junerver/uts-plugin-cli list
 ```
 
 ## 插件来源

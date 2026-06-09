@@ -63,10 +63,8 @@ async function install(pluginName, options) {
     console.log('')
     console.log(chalk.gray(`安装路径：${installPath}`))
     console.log('')
-    console.log(chalk.yellow('提示：请确保在页面中使用条件编译指令包裹插件代码'))
-    console.log(chalk.gray('// #ifdef APP-HARMONY'))
-    console.log(chalk.gray('import { xxx } from "@/uni_modules/' + pluginName + '"'))
-    console.log(chalk.gray('// #endif'))
+    console.log(chalk.yellow('请阅读插件 README.md 了解使用方法：'))
+    console.log(chalk.gray(`  ${path.join(installPath, 'readme.md')}`))
 
   } catch (error) {
     console.log('')

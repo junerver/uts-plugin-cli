@@ -87,9 +87,9 @@ async function list(options) {
 
       console.log('')
       console.log(chalk.gray('使用方法：'))
-      console.log(chalk.gray('  安装：npx uts-plugin-cli install <plugin-name>'))
-      console.log(chalk.gray('  卸载：npx uts-plugin-cli uninstall <plugin-name>'))
-      console.log(chalk.gray('  更新：npx uts-plugin-cli update <plugin-name>'))
+      console.log(chalk.gray('  安装：npx @junerver/uts-plugin-cli install <plugin-name>'))
+      console.log(chalk.gray('  卸载：npx @junerver/uts-plugin-cli uninstall <plugin-name>'))
+      console.log(chalk.gray('  更新：npx @junerver/uts-plugin-cli update <plugin-name>'))
     }
 
   } catch (error) {

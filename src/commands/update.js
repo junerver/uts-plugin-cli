@@ -1,7 +1,7 @@
 const path = require('path')
 const chalk = require('chalk')
 const ora = require('ora')
-const { downloadPlugin, getPluginInfo } = require('../utils/download')
+const { downloadPlugin, getPluginInfo, fetchManifest } = require('../utils/download')
 const { findProjectRoot, isPluginInstalled, removePlugin } = require('../utils/fs')
 const config = require('../config')
 
@@ -34,9 +34,31 @@ async function update(pluginName, options) {
     const currentInfo = getPluginInfo(pluginPath)
     const currentVersion = currentInfo?.version || '未知'
 
-    console.log(chalk.cyan(`当前版本：${currentVersion}`))
+    // 获取远程版本
+    spinner.start('正在检查远程版本...')
+    const manifest = await fetchManifest({
+      owner: config.github.owner,
+      repo: config.github.repo,
+      branch: options.branch || config.github.branch,
+      token: options.token || config.github.token,
+    })
+    spinner.stop()
 
-    spinner.start(`正在更新插件 "${pluginName}"...`)
+    const remotePlugin = manifest.plugins[pluginName]
+    const remoteVersion = remotePlugin?.version || '未知'
+
+    console.log(chalk.cyan(`当前版本：${currentVersion}`))
+    console.log(chalk.cyan(`远程版本：${remoteVersion}`))
+
+    // 版本比对
+    if (currentVersion === remoteVersion) {
+      console.log('')
+      console.log(chalk.green(`✔ 插件 "${pluginName}" 已是最新版本 (v${currentVersion})，无需更新`))
+      return
+    }
+
+    console.log('')
+    spinner.start(`正在更新插件 "${pluginName}" (v${currentVersion} -> v${remoteVersion})...`)
 
     // 先删除旧版本
     removePlugin(pluginPath)

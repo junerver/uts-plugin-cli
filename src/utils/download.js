@@ -236,5 +236,6 @@ async function listRemotePlugins({ owner, repo, branch, token = null }) {
 module.exports = {
   downloadPlugin,
   getPluginInfo,
-  listRemotePlugins
+  listRemotePlugins,
+  fetchManifest
 }

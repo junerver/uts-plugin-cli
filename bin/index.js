@@ -12,24 +12,24 @@ program
   .version(pkg.version)
 
 program
-  .command('install <plugin-name>')
+  .command('install [plugin-names...]')
   .alias('i')
-  .description('安装 UTS 插件')
+  .description('安装 UTS 插件（支持多个）')
   .option('-b, --branch <branch>', '指定分支')
   .option('-t, --token <token>', 'GitHub token（用于私有仓库或提高 API 限制）')
   .action(require('../src/commands/install'))
 
 program
-  .command('uninstall <plugin-name>')
+  .command('uninstall [plugin-names...]')
   .alias('rm')
-  .description('卸载 UTS 插件')
+  .description('卸载 UTS 插件（支持多个）')
   .option('-f, --force', '强制卸载，不提示确认')
   .action(require('../src/commands/uninstall'))
 
 program
-  .command('update <plugin-name>')
+  .command('update [plugin-names...]')
   .alias('u')
-  .description('升级 UTS 插件')
+  .description('升级 UTS 插件（支持多个）')
   .option('-b, --branch <branch>', '指定分支')
   .option('-t, --token <token>', 'GitHub token（用于私有仓库或提高 API 限制）')
   .option('-f, --force', '强制全量更新，跳过文件比对')
@@ -48,8 +48,10 @@ program.on('--help', () => {
   console.log('')
   console.log(chalk.cyan('示例：'))
   console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli install jkr-abc-epay'))
+  console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli install plugin-a plugin-b'))
   console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli uninstall jkr-abc-epay'))
   console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli update jkr-abc-epay'))
+  console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli update --force jkr-abc-epay'))
   console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli list'))
   console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli list --installed'))
   console.log('')

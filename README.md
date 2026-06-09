@@ -40,7 +40,7 @@ npx @junerver/uts-plugin-cli install jkr-abc-epay
 ### 卸载插件
 
 ```bash
-npx @junerver/uts-plugin-cli uninstall <plugin-name>
+npm config get registry uninstall <plugin-name>
 ```
 
 强制卸载（不提示确认）：
@@ -63,12 +63,12 @@ npx @junerver/uts-plugin-cli list --installed
 
 ## 命令别名
 
-| 命令 | 别名 |
-|------|------|
-| `install` | `i` |
+| 命令        | 别名 |
+| ----------- | ---- |
+| `install`   | `i`  |
 | `uninstall` | `rm` |
-| `update` | `u` |
-| `list` | `ls` |
+| `update`    | `u`  |
+| `list`      | `ls` |
 
 示例：
 
@@ -148,7 +148,7 @@ export GITHUB_TOKEN=*** @junerver/uts-plugin-cli install jkr-abc-epay
 
 ```typescript
 // #ifdef APP-HARMONY
-import { xxx } from "@/uni_modules/plugin-name"
+import { xxx } from "@/uni_modules/plugin-name";
 // #endif
 ```
 

@@ -25,7 +25,6 @@ function createAxiosInstance(token = null) {
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy
 
   if (httpsProxy) {
-    // 使用代理
     const { URL } = require('url')
     try {
       const proxyUrl = new URL(httpsProxy)
@@ -47,41 +46,54 @@ function createAxiosInstance(token = null) {
  * @param {object} options
  * @returns {Promise<object>} manifest 内容
  */
-async function fetchManifest({ owner, repo, branch, token = null }) {
+async function fetchManifest({ owner, repo, branch, token = null, onProgress = null }) {
   const instance = createAxiosInstance(token)
 
   // 尝试多个来源获取 plugins.json
   const sources = [
-    // 1. 直接访问 raw.githubusercontent.com
-    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`,
-    // 2. 使用代理服务
-    `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`,
-    // 3. 使用另一个代理服务
-    `https://raw.gitmirror.com/${owner}/${repo}/${branch}/plugins.json`
+    { url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`, name: 'GitHub 直连' },
+    { url: `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`, name: 'ghp.ci 代理' },
+    { url: `https://raw.gitmirror.com/${owner}/${repo}/${branch}/plugins.json`, name: 'gitmirror 代理' }
   ]
 
-  let lastError = null
+  for (const source of sources) {
+    if (onProgress) {
+      onProgress(`尝试 ${source.name}...`)
+    }
 
-  for (const url of sources) {
     try {
-      const response = await instance.get(url)
+      const response = await instance.get(source.url)
       if (response.data && typeof response.data === 'object' && response.data.plugins) {
+        if (onProgress) {
+          onProgress(`✓ 获取插件清单成功`)
+        }
         return response.data
       }
     } catch (error) {
-      lastError = error
+      if (onProgress) {
+        onProgress(`✗ ${source.name} 失败`)
+      }
       // 继续尝试下一个来源
     }
   }
 
   // 如果所有来源都失败，尝试使用 GitHub API
+  if (onProgress) {
+    onProgress('尝试 GitHub API...')
+  }
+
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/plugins.json?ref=${branch}`
   try {
     const response = await instance.get(apiUrl)
     const content = Buffer.from(response.data.content, 'base64').toString('utf-8')
+    if (onProgress) {
+      onProgress(`✓ 通过 API 获取清单成功`)
+    }
     return JSON.parse(content)
   } catch (error) {
-    lastError = error
+    if (onProgress) {
+      onProgress(`✗ API 请求失败`)
+    }
   }
 
   throw new Error(
@@ -89,11 +101,9 @@ async function fetchManifest({ owner, repo, branch, token = null }) {
     `请尝试以下解决方案：\n` +
     `1. 设置 HTTP 代理：\n` +
     `   PowerShell: $Env:HTTPS_PROXY="http://127.0.0.1:7890"\n` +
-    `   CMD: set HTTPS_PROXY=http://127.0.0.1:7890\n` +
-    `   Linux/Mac: export HTTPS_PROXY=http://127.0.0.1:7890\n\n` +
-    `2. 或使用 GitHub token（推荐）：\n` +
-    `   npx @junerver/uts-plugin-cli list --token ghp_xxxx\n\n` +
-    `仓库：${owner}/${repo}`
+    `   CMD: set HTTPS_PROXY=http://127.0.0.1:7890\n\n` +
+    `2. 或使用 GitHub token：\n` +
+    `   npx @junerver/uts-plugin-cli list --token ghp_xxxx`
   )
 }
 
@@ -105,8 +115,9 @@ async function fetchManifest({ owner, repo, branch, token = null }) {
  * @param {string} filePath - 文件路径
  * @param {string} savePath - 本地保存路径
  * @param {string} token - GitHub token（可选）
+ * @param {function} onProgress - 进度回调
  */
-async function downloadFile(owner, repo, branch, filePath, savePath, token = null) {
+async function downloadFile(owner, repo, branch, filePath, savePath, token = null, onProgress = null) {
   const instance = createAxiosInstance(token)
 
   // 尝试多个来源下载
@@ -127,7 +138,7 @@ async function downloadFile(owner, repo, branch, filePath, savePath, token = nul
       }
 
       fs.writeFileSync(savePath, Buffer.from(response.data))
-      return
+      return true
     } catch (error) {
       // 继续尝试下一个来源
     }
@@ -145,7 +156,7 @@ async function downloadFile(owner, repo, branch, filePath, savePath, token = nul
 
     const content = Buffer.from(response.data.content, 'base64')
     fs.writeFileSync(savePath, content)
-    return
+    return true
   } catch (error) {
     throw new Error(`下载失败：${filePath}`)
   }
@@ -156,9 +167,9 @@ async function downloadFile(owner, repo, branch, filePath, savePath, token = nul
  * @param {object} options
  * @returns {Promise<string>} 安装路径
  */
-async function downloadPlugin({ owner, repo, branch, pluginName, targetDir, token = null }) {
+async function downloadPlugin({ owner, repo, branch, pluginName, targetDir, token = null, onProgress = null }) {
   // 从仓库获取 manifest
-  const manifest = await fetchManifest({ owner, repo, branch, token })
+  const manifest = await fetchManifest({ owner, repo, branch, token, onProgress })
 
   // 检查插件是否存在
   const pluginInfo = manifest.plugins[pluginName]
@@ -169,14 +180,26 @@ async function downloadPlugin({ owner, repo, branch, pluginName, targetDir, toke
     )
   }
 
+  if (onProgress) {
+    onProgress(`找到 ${pluginInfo.files.length} 个文件，开始下载...`)
+  }
+
   // 计算本地安装路径
   const installDir = path.join(targetDir, 'uni_modules', pluginName)
 
   // 下载所有文件
+  let downloaded = 0
+  const total = pluginInfo.files.length
+
   for (const file of pluginInfo.files) {
     const filePath = `uni_modules/${pluginName}/${file}`
     const savePath = path.join(installDir, file)
     await downloadFile(owner, repo, branch, filePath, savePath, token)
+
+    downloaded++
+    if (onProgress) {
+      onProgress(`[${downloaded}/${total}] ${file}`)
+    }
   }
 
   return installDir

@@ -34,19 +34,21 @@ async function install(pluginName, options) {
     console.log(chalk.gray(`目录：uni_modules/${pluginName}`))
     console.log('')
 
-    spinner.start('获取目录内容...')
-
-    // 下载插件（只下载指定目录）
+    // 下载插件（带进度回调）
     const installPath = await downloadPlugin({
       owner: config.github.owner,
       repo: config.github.repo,
       branch: options.branch || config.github.branch,
       pluginName,
       targetDir: projectDir,
-      token: options.token || config.github.token
+      token: options.token || config.github.token,
+      onProgress: (message) => {
+        console.log(chalk.gray(`  ${message}`))
+      }
     })
 
-    spinner.succeed(`插件 "${pluginName}" 安装成功！`)
+    console.log('')
+    console.log(chalk.green(`✔ 插件 "${pluginName}" 安装成功！`))
 
     // 显示插件信息
     const pluginInfo = getPluginInfo(installPath)
@@ -67,8 +69,8 @@ async function install(pluginName, options) {
     console.log(chalk.gray('// #endif'))
 
   } catch (error) {
-    spinner.fail('安装失败')
-    console.log(chalk.red(error.message))
+    console.log('')
+    console.log(chalk.red(`✖ 安装失败：${error.message}`))
     process.exit(1)
   }
 }

@@ -8,7 +8,7 @@ const path = require('path')
  */
 function isUniAppProject(dir) {
   // 检查常见的 uni-app 项目标识文件
-  const markers = ['manifest.json', 'pages.json', 'uni.prompts.json']
+  const markers = ['manifest.json', 'pages.json', 'uni.prompts.json', 'uni.scss']
   return markers.some(marker => fs.existsSync(path.join(dir, marker)))
 }
 

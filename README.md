@@ -72,6 +72,60 @@ npx @junerver/uts-plugin-cli update <plugin-name>
 npx @junerver/uts-plugin-cli list --installed
 ```
 
+### 搜索插件
+
+```bash
+npx @junerver/uts-plugin-cli search <keyword>
+```
+
+示例：
+
+```bash
+npx @junerver/uts-plugin-cli search epay
+```
+
+输出示例：
+
+```
+搜索结果：找到 1 个插件
+仓库：junerver/UtsPlugins
+
+  名称                    版本      描述
+  ─────────────────────────────────────────────────────────
+  jkr-abc-epay            1.0.4     农行e支付鸿蒙SDK封装，支持农行掌银支付功能
+```
+
+### 查看插件详情
+
+```bash
+npx @junerver/uts-plugin-cli info <plugin-name>
+```
+
+示例：
+
+```bash
+npx @junerver/uts-plugin-cli info jkr-abc-epay
+```
+
+输出示例：
+
+```
+插件详情
+──────────────────────────────────────────────────
+
+名称：jkr-abc-epay
+版本：1.0.4
+描述：农行e支付鸿蒙SDK封装，支持农行掌银支付功能
+安装状态：未安装
+
+包含文件：
+  - changelog.md
+  - package.json
+  - readme.md
+  - utssdk/app-harmony/index.uts
+  ...
+```
+
 ## 命令别名
 
 | 命令        | 别名 |
@@ -80,6 +134,7 @@ npx @junerver/uts-plugin-cli list --installed
 | `uninstall` | `rm` |
 | `update`    | `u`  |
 | `list`      | `ls` |
+| `search`    | `s`  |
 
 示例：
 
@@ -88,6 +143,8 @@ npx @junerver/uts-plugin-cli i jkr-abc-epay
 npx @junerver/uts-plugin-cli rm jkr-abc-epay
 npx @junerver/uts-plugin-cli u jkr-abc-epay
 npx @junerver/uts-plugin-cli ls
+npx @junerver/uts-plugin-cli s epay
+npx @junerver/uts-plugin-cli info jkr-abc-epay
 ```
 
 ## 网络代理

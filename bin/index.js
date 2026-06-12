@@ -44,6 +44,19 @@ program
   .option('-t, --token <token>', 'GitHub token（用于私有仓库或提高 API 限制）')
   .action(require('../src/commands/list'))
 
+program
+  .command('search <keyword>')
+  .alias('s')
+  .description('搜索插件')
+  .option('-t, --token <token>', 'GitHub token（用于私有仓库或提高 API 限制）')
+  .action(require('../src/commands/search'))
+
+program
+  .command('info <plugin-name>')
+  .description('查看插件详情')
+  .option('-t, --token <token>', 'GitHub token（用于私有仓库或提高 API 限制）')
+  .action(require('../src/commands/info'))
+
 // 显示帮助信息
 program.on('--help', () => {
   console.log('')
@@ -55,6 +68,8 @@ program.on('--help', () => {
   console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli update --force jkr-abc-epay'))
   console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli list'))
   console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli list --installed'))
+  console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli search epay'))
+  console.log(chalk.gray('  $ npx @junerver/uts-plugin-cli info jkr-abc-epay'))
   console.log('')
   console.log(chalk.cyan('网络代理（如果无法访问 GitHub）：'))
   console.log(chalk.gray('  PowerShell:'))

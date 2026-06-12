@@ -4,6 +4,7 @@ const ora = require('ora')
 const readline = require('readline')
 const { downloadPlugin, downloadFiles, getPluginInfo, fetchManifest } = require('../utils/download')
 const { findProjectRoot, isPluginInstalled, removePlugin, diffFiles } = require('../utils/fs')
+const { hasExternalFiles, getExternalFiles } = require('../utils/external-files')
 const config = require('../config')
 
 /**
@@ -75,6 +76,15 @@ async function updateOne(pluginName, projectDir, manifest, options) {
 
     spinner.succeed(`  ✔ 更新成功`)
     console.log(chalk.gray(`  ${installPath}`))
+    
+    // 处理外部文件
+    const externalFiles = remotePlugin.externalFiles || []
+    if (externalFiles.length > 0) {
+      console.log(chalk.cyan(`  处理外部文件 (${externalFiles.length} 个)...`))
+      const { processExternalFiles } = require('./install')
+      await processExternalFiles(installPath, projectDir, remotePlugin, options.force)
+    }
+    
     return
   }
 
@@ -150,6 +160,14 @@ async function updateOne(pluginName, projectDir, manifest, options) {
   spinner.succeed(`  ✔ ${filesToUpdate.length} 个文件更新完成`)
   if (diff.deleted.length > 0) {
     console.log(chalk.gray(`  （本地多余 ${diff.deleted.length} 个文件未删除，如需清理请手动处理）`))
+  }
+  
+  // 处理外部文件
+  const externalFiles = remotePlugin.externalFiles || []
+  if (externalFiles.length > 0) {
+    console.log(chalk.cyan(`  处理外部文件 (${externalFiles.length} 个)...`))
+    const { processExternalFiles } = require('./install')
+    await processExternalFiles(pluginPath, projectDir, remotePlugin, options.force)
   }
 }
 

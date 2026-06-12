@@ -17,6 +17,7 @@ program
   .description('安装 UTS 插件（支持多个）')
   .option('-b, --branch <branch>', '指定分支')
   .option('-t, --token <token>', 'GitHub token（用于私有仓库或提高 API 限制）')
+  .option('-f, --force', '强制使用默认策略处理外部文件，不提示选择')
   .action(require('../src/commands/install'))
 
 program

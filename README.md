@@ -37,6 +37,17 @@ cd my-uni-app
 npx @junerver/uts-plugin-cli install jkr-abc-epay
 ```
 
+安装时如果插件包含外部文件（如鸿蒙配置文件），会提示选择处理方式：
+- **merge** - 深度合并（推荐），智能合并配置项
+- **overwrite** - 完全覆盖现有文件
+- **skip** - 跳过不处理
+
+使用 `--force` 参数可跳过交互提示，自动使用插件指定的默认策略：
+
+```bash
+npx @junerver/uts-plugin-cli install jkr-abc-epay --force
+```
+
 ### 卸载插件
 
 ```bash
@@ -151,6 +162,84 @@ export GITHUB_TOKEN=*** @junerver/uts-plugin-cli install jkr-abc-epay
 import { xxx } from "@/uni_modules/plugin-name";
 // #endif
 ```
+
+## 外部文件关联
+
+某些插件（如鸿蒙SDK插件）需要修改项目根目录下的配置文件。CLI支持声明外部关联文件，安装时自动处理合并。
+
+### 目录结构
+
+插件仓库中的目录结构：
+
+```
+uni_modules/jkr-abc-epay/
+├── .uts-plugin.json          # 外部文件声明（必须）
+├── _external/                # 外部文件存储目录（约定）
+│   └── harmony-configs/...   # 外部配置文件片段
+├── utssdk/                   # 插件自身文件
+└── package.json
+```
+
+- `_external` 目录：约定的外部文件存储目录，**不会收录到 `files` 中**
+- `.uts-plugin.json`：声明外部文件的处理规则
+
+### 配置格式
+
+插件目录下创建 `.uts-plugin.json` 文件：
+
+```json
+{
+  "externalFiles": [
+    {
+      "source": "harmony-configs/entry/src/main/module.json5",
+      "target": "harmony-configs/entry/src/main/module.json5",
+      "strategy": "merge",
+      "description": "配置ACL 受限权限",
+      "arrayKeys": ["requestPermissions"]
+    }
+  ]
+}
+```
+
+### 字段说明
+
+| 字段 | 说明 |
+|------|------|
+| `source` | 源文件路径（相对于插件的 `_external` 目录） |
+| `target` | 目标文件路径（相对于项目根目录） |
+| `strategy` | 默认处理策略：`merge`（合并）、`overwrite`（覆盖） |
+| `description` | 文件描述（可选） |
+| `arrayKeys` | 需要追加去重的数组键名（仅 merge 策略生效）。**为空或不填时，合并全部字段** |
+
+### arrayKeys 说明
+
+`arrayKeys` 支持嵌套路径，使用点号分隔：
+
+```json
+{
+  "arrayKeys": ["module.querySchemes"]
+}
+```
+
+- `"module.querySchemes"`：表示 `module` 对象下的 `querySchemes` 数组需要去重追加
+- 为空数组 `[]` 或不填时：所有数组字段都会去重追加
+
+### 路径解析规则
+
+| 字段 | 路径起点 | 示例 |
+|------|----------|------|
+| `files[].path` | 插件目录 | `utssdk/app-harmony/config.json` |
+| `externalFiles[].source` | 插件的 `_external` 目录 | `harmony-configs/entry/src/main/module.json5` |
+| `externalFiles[].target` | 项目根目录 | `harmony-configs/entry/src/main/module.json5` |
+
+### 支持的配置文件
+
+目前主要支持鸿蒙系统的 json5 格式配置文件：
+
+1. `/harmony-configs/oh-package.json5` - 项目依赖文件
+2. `/harmony-configs/build-profile.json5` - 数字签名配置
+3. `/harmony-configs/entry/src/main/module.json5` - ACL 权限配置
+4. `/harmony-configs/AppScope/app.json5` - 应用名称和版本信息
 
 ## License
 

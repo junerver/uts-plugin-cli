@@ -158,12 +158,7 @@ function cleanupSpecialFiles(pluginPath) {
     console.log(chalk.gray('  清理: _external/'))
   }
   
-  // 清理 .uts-plugin.json 文件
-  const configPath = path.join(pluginPath, '.uts-plugin.json')
-  if (fs.existsSync(configPath)) {
-    fs.unlinkSync(configPath)
-    console.log(chalk.gray('  清理: .uts-plugin.json'))
-  }
+  // 注意：保留 .uts-plugin.json 文件，以便卸载时读取配置处理外部文件
 }
 
 /**

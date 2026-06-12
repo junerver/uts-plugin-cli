@@ -15,7 +15,9 @@ uts-plugin-cli/
 │   │   ├── install.js             # 安装命令
 │   │   ├── update.js              # 升级命令
 │   │   ├── uninstall.js           # 卸载命令
-│   │   └── list.js                # 列表命令
+│   │   ├── list.js                # 列表命令
+│   │   ├── search.js              # 搜索命令
+│   │   └── info.js                # 详情命令
 │   ├── utils/
 │   │   ├── download.js            # 下载工具
 │   │   ├── fs.js                  # 文件系统工具

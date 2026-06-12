@@ -2,6 +2,15 @@
 
 UTS 插件管理工具 - 从 GitHub/Gitee 仓库安装 uni-app 原生插件
 
+## 功能特性
+
+- **插件管理** - 安装、卸载、升级插件
+- **插件搜索** - 按关键词搜索插件
+- **插件详情** - 查看插件详细信息
+- **外部文件关联** - 自动合并鸿蒙配置文件
+- **双仓库支持** - 支持 GitHub 和 Gitee
+- **智能降级** - 自动尝试多个下载源
+
 ## 安装
 
 ```bash
@@ -198,7 +207,20 @@ npx @junerver/uts-plugin-cli list
 
 所有插件来自 GitHub 仓库：[junerver/UtsPlugins](https://github.com/junerver/UtsPlugins)
 
+Gitee 镜像：[junerver/UtsPlugins](https://gitee.com/junerver/UtsPlugins)
+
 CLI 通过读取仓库根目录的 `plugins.json` 文件获取插件列表和文件信息。
+
+## 下载优先级
+
+CLI 会按以下顺序尝试下载，成功后停止：
+
+1. **GitHub 直连** - `raw.githubusercontent.com`
+2. **GitHub 代理** - `ghp.ci`
+3. **GitHub 代理** - `raw.gitmirror.com`
+4. **Gitee** - `gitee.com`
+
+使用 `--source` 参数可强制指定仓库源（见 [仓库源配置](#仓库源配置)）。
 
 ## 自动化流程
 

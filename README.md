@@ -63,6 +63,8 @@ npx @junerver/uts-plugin-cli install jkr-abc-epay --force
 npx @junerver/uts-plugin-cli uninstall <plugin-name>
 ```
 
+卸载时会自动检测并移除外部文件变更（如鸿蒙配置文件）。
+
 强制卸载（不提示确认）：
 
 ```bash

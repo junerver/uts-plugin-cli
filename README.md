@@ -1,6 +1,6 @@
 # UTS Plugin CLI
 
-UTS 插件管理工具 - 从 GitHub 仓库安装 uni-app 原生插件
+UTS 插件管理工具 - 从 GitHub/Gitee 仓库安装 uni-app 原生插件
 
 ## 安装
 
@@ -145,6 +145,28 @@ npx @junerver/uts-plugin-cli u jkr-abc-epay
 npx @junerver/uts-plugin-cli ls
 npx @junerver/uts-plugin-cli s epay
 npx @junerver/uts-plugin-cli info jkr-abc-epay
+```
+
+## 仓库源配置
+
+CLI 支持从 GitHub 或 Gitee 下载插件，默认自动选择（GitHub 优先）。
+
+指定仓库源：
+
+```bash
+# 从 GitHub 获取（默认）
+npx @junerver/uts-plugin-cli list --source github
+
+# 从 Gitee 获取
+npx @junerver/uts-plugin-cli list --source gitee
+```
+
+所有命令都支持 `--source` 参数：
+
+```bash
+npx @junerver/uts-plugin-cli install jkr-abc-epay --source gitee
+npx @junerver/uts-plugin-cli search epay --source gitee
+npx @junerver/uts-plugin-cli info jkr-abc-epay --source gitee
 ```
 
 ## 网络代理

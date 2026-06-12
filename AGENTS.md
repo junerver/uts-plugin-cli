@@ -119,10 +119,33 @@ uts-plugin-cli/
 
 ### 版本管理
 
-- 遵循 Semantic Versioning
-- 更新 `package.json` 中的 `version`
-- 创建对应的 git tag（如 `v1.1.1`）
-- npm 会自动发布新版本
+遵循 Semantic Versioning（语义化版本）：`主版本号.次版本号.修订号`
+
+**版本规则：**
+
+| 版本位 | 更新时机 | 示例 |
+|--------|----------|------|
+| 第一位（主版本） | 原则上不变，仅在重大架构变更或不兼容更新时递增 | `1.0.0` → `2.0.0` |
+| 第二位（次版本） | 增加新功能时递增 | `1.0.0` → `1.1.0` |
+| 第三位（修订号） | 修复 bug 时递增 | `1.1.0` → `1.1.1` |
+
+**发布流程：**
+
+1. 更新 `package.json` 中的 `version`
+2. 提交代码并附带版本号 commit
+3. 创建对应的 git tag（如 `v1.1.0`）
+4. 推送代码和 tag，npm 会自动发布新版本
+
+**示例：**
+```bash
+# 新功能发布
+npm version minor  # 1.1.0 → 1.2.0
+git push && git push --tags
+
+# Bug 修复发布
+npm version patch  # 1.2.0 → 1.2.1
+git push && git push --tags
+```
 
 ## 测试
 

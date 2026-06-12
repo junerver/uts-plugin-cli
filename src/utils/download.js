@@ -192,13 +192,37 @@ async function downloadPlugin({ owner, repo, branch, pluginName, targetDir, toke
   const total = pluginInfo.files.length
 
   for (const file of pluginInfo.files) {
-    const filePath = `uni_modules/${pluginName}/${file}`
-    const savePath = path.join(installDir, file)
-    await downloadFile(owner, repo, branch, filePath, savePath, token)
+    // 处理文件对象和字符串两种格式
+    const filePath = typeof file === 'object' ? file.path : file
+    const downloadPath = `uni_modules/${pluginName}/${filePath}`
+    const savePath = path.join(installDir, filePath)
+    await downloadFile(owner, repo, branch, downloadPath, savePath, token)
 
     downloaded++
     if (onProgress) {
-      onProgress(`[${downloaded}/${total}] ${file}`)
+      onProgress(`[${downloaded}/${total}] ${filePath}`)
+    }
+  }
+
+  // 下载外部文件（如果存在）
+  // externalFiles.source 相对于 _external 目录
+  if (pluginInfo.externalFiles && pluginInfo.externalFiles.length > 0) {
+    if (onProgress) {
+      onProgress(`下载 ${pluginInfo.externalFiles.length} 个外部文件...`)
+    }
+    
+    for (const extFile of pluginInfo.externalFiles) {
+      // 外部文件存储在 uni_modules/pluginName/_external/ 目录下
+      const localPath = path.join(installDir, '_external', extFile.source)
+      // 从仓库下载（路径为 uni_modules/pluginName/_external/source）
+      const repoPath = `uni_modules/${pluginName}/_external/${extFile.source}`
+      try {
+        await downloadFile(owner, repo, branch, repoPath, localPath, token)
+      } catch (error) {
+        if (onProgress) {
+          onProgress(`外部文件下载失败: ${repoPath}`)
+        }
+      }
     }
   }
 

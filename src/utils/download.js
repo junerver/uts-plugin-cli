@@ -49,11 +49,12 @@ function createAxiosInstance(token = null) {
 async function fetchManifest({ owner, repo, branch, token = null, onProgress = null }) {
   const instance = createAxiosInstance(token)
 
-  // 尝试多个来源获取 plugins.json
+  // 尝试多个来源获取 plugins.json（GitHub 优先，然后 GitHub 代理，最后 Gitee）
   const sources = [
     { url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`, name: 'GitHub 直连' },
     { url: `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`, name: 'ghp.ci 代理' },
-    { url: `https://raw.gitmirror.com/${owner}/${repo}/${branch}/plugins.json`, name: 'gitmirror 代理' }
+    { url: `https://raw.gitmirror.com/${owner}/${repo}/${branch}/plugins.json`, name: 'gitmirror 代理' },
+    { url: `https://gitee.com/${config.gitee.owner}/${config.gitee.repo}/raw/${config.gitee.branch}/plugins.json`, name: 'Gitee' }
   ]
 
   for (const source of sources) {
@@ -65,7 +66,7 @@ async function fetchManifest({ owner, repo, branch, token = null, onProgress = n
       const response = await instance.get(source.url)
       if (response.data && typeof response.data === 'object' && response.data.plugins) {
         if (onProgress) {
-          onProgress(`✓ 获取插件清单成功`)
+          onProgress(`✓ 通过 ${source.name} 获取清单成功`)
         }
         return response.data
       }
@@ -120,11 +121,12 @@ async function fetchManifest({ owner, repo, branch, token = null, onProgress = n
 async function downloadFile(owner, repo, branch, filePath, savePath, token = null, onProgress = null) {
   const instance = createAxiosInstance(token)
 
-  // 尝试多个来源下载
+  // 尝试多个来源下载（GitHub 优先，然后 GitHub 代理，最后 Gitee）
   const sources = [
     `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`,
     `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`,
-    `https://raw.gitmirror.com/${owner}/${repo}/${branch}/${filePath}`
+    `https://raw.gitmirror.com/${owner}/${repo}/${branch}/${filePath}`,
+    `https://gitee.com/${config.gitee.owner}/${config.gitee.repo}/raw/${config.gitee.branch}/${filePath}`
   ]
 
   for (const url of sources) {

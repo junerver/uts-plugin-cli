@@ -8,6 +8,11 @@ module.exports = {
     branch: 'master',
     token: process.env.GITHUB_TOKEN || null
   },
+  gitee: {
+    owner: 'junerver',
+    repo: 'UtsPlugins',
+    branch: 'master'
+  },
   pluginDir: 'uni_modules',
   registry: 'uni_modules'
 }

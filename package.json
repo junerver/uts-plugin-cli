@@ -1,6 +1,6 @@
 {
   "name": "@junerver/uts-plugin-cli",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "UTS 插件管理工具 - 从 GitHub 仓库安装 uni-app 原生插件",
   "main": "index.js",
   "bin": {

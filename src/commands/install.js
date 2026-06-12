@@ -196,6 +196,7 @@ async function installOne(pluginName, projectDir, manifest, options) {
     pluginName,
     targetDir: projectDir,
     token: options.token || config.github.token,
+    source: options.source
   })
 
   const pluginInfo = getPluginInfo(installPath)

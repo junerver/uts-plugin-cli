@@ -26,7 +26,8 @@ async function info(pluginName, options) {
       owner: config.github.owner,
       repo: config.github.repo,
       branch: options.branch || config.github.branch,
-      token: options.token || config.github.token
+      token: options.token || config.github.token,
+      source: options.source
     })
 
     spinner.stop()

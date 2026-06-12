@@ -72,6 +72,7 @@ async function updateOne(pluginName, projectDir, manifest, options) {
       branch: options.branch || config.github.branch,
       pluginName,
       targetDir: projectDir,
+      source: options.source
     })
 
     spinner.succeed(`  ✔ 更新成功`)
@@ -103,6 +104,7 @@ async function updateOne(pluginName, projectDir, manifest, options) {
         branch: options.branch || config.github.branch,
         pluginName,
         targetDir: projectDir,
+        source: options.source
       })
       spinner.succeed('  ✔ 强制更新完成')
       console.log(chalk.gray(`  ${installPath}`))

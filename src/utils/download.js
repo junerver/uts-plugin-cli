@@ -46,16 +46,33 @@ function createAxiosInstance(token = null) {
  * @param {object} options
  * @returns {Promise<object>} manifest 内容
  */
-async function fetchManifest({ owner, repo, branch, token = null, onProgress = null }) {
+async function fetchManifest({ owner, repo, branch, token = null, onProgress = null, source = null }) {
   const instance = createAxiosInstance(token)
 
-  // 尝试多个来源获取 plugins.json（GitHub 优先，然后 GitHub 代理，最后 Gitee）
-  const sources = [
-    { url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`, name: 'GitHub 直连' },
-    { url: `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`, name: 'ghp.ci 代理' },
-    { url: `https://raw.gitmirror.com/${owner}/${repo}/${branch}/plugins.json`, name: 'gitmirror 代理' },
-    { url: `https://gitee.com/${config.gitee.owner}/${config.gitee.repo}/raw/${config.gitee.branch}/plugins.json`, name: 'Gitee' }
-  ]
+  // 根据 source 参数构建源列表
+  let sources = []
+  
+  if (source === 'gitee') {
+    // 仅使用 Gitee
+    sources = [
+      { url: `https://gitee.com/${config.gitee.owner}/${config.gitee.repo}/raw/${config.gitee.branch}/plugins.json`, name: 'Gitee' }
+    ]
+  } else if (source === 'github') {
+    // 仅使用 GitHub
+    sources = [
+      { url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`, name: 'GitHub 直连' },
+      { url: `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`, name: 'ghp.ci 代理' },
+      { url: `https://raw.gitmirror.com/${owner}/${repo}/${branch}/plugins.json`, name: 'gitmirror 代理' }
+    ]
+  } else {
+    // 自动选择：GitHub 优先，然后 GitHub 代理，最后 Gitee
+    sources = [
+      { url: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`, name: 'GitHub 直连' },
+      { url: `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/plugins.json`, name: 'ghp.ci 代理' },
+      { url: `https://raw.gitmirror.com/${owner}/${repo}/${branch}/plugins.json`, name: 'gitmirror 代理' },
+      { url: `https://gitee.com/${config.gitee.owner}/${config.gitee.repo}/raw/${config.gitee.branch}/plugins.json`, name: 'Gitee' }
+    ]
+  }
 
   for (const source of sources) {
     if (onProgress) {
@@ -79,21 +96,23 @@ async function fetchManifest({ owner, repo, branch, token = null, onProgress = n
   }
 
   // 如果所有来源都失败，尝试使用 GitHub API
-  if (onProgress) {
-    onProgress('尝试 GitHub API...')
-  }
-
-  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/plugins.json?ref=${branch}`
-  try {
-    const response = await instance.get(apiUrl)
-    const content = Buffer.from(response.data.content, 'base64').toString('utf-8')
+  if (source !== 'gitee') {
     if (onProgress) {
-      onProgress(`✓ 通过 API 获取清单成功`)
+      onProgress('尝试 GitHub API...')
     }
-    return JSON.parse(content)
-  } catch (error) {
-    if (onProgress) {
-      onProgress(`✗ API 请求失败`)
+
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/plugins.json?ref=${branch}`
+    try {
+      const response = await instance.get(apiUrl)
+      const content = Buffer.from(response.data.content, 'base64').toString('utf-8')
+      if (onProgress) {
+        onProgress(`✓ 通过 API 获取清单成功`)
+      }
+      return JSON.parse(content)
+    } catch (error) {
+      if (onProgress) {
+        onProgress(`✗ API 请求失败`)
+      }
     }
   }
 
@@ -104,7 +123,9 @@ async function fetchManifest({ owner, repo, branch, token = null, onProgress = n
     `   PowerShell: $Env:HTTPS_PROXY="http://127.0.0.1:7890"\n` +
     `   CMD: set HTTPS_PROXY=http://127.0.0.1:7890\n\n` +
     `2. 或使用 GitHub token：\n` +
-    `   npx @junerver/uts-plugin-cli list --token ghp_xxxx`
+    `   npx @junerver/uts-plugin-cli list --token ghp_xxxx\n\n` +
+    `3. 或指定使用 Gitee：\n` +
+    `   npx @junerver/uts-plugin-cli list --source gitee`
   )
 }
 
@@ -117,17 +138,35 @@ async function fetchManifest({ owner, repo, branch, token = null, onProgress = n
  * @param {string} savePath - 本地保存路径
  * @param {string} token - GitHub token（可选）
  * @param {function} onProgress - 进度回调
+ * @param {string} source - 仓库源：github 或 gitee（可选）
  */
-async function downloadFile(owner, repo, branch, filePath, savePath, token = null, onProgress = null) {
+async function downloadFile(owner, repo, branch, filePath, savePath, token = null, onProgress = null, source = null) {
   const instance = createAxiosInstance(token)
 
-  // 尝试多个来源下载（GitHub 优先，然后 GitHub 代理，最后 Gitee）
-  const sources = [
-    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`,
-    `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`,
-    `https://raw.gitmirror.com/${owner}/${repo}/${branch}/${filePath}`,
-    `https://gitee.com/${config.gitee.owner}/${config.gitee.repo}/raw/${config.gitee.branch}/${filePath}`
-  ]
+  // 根据 source 参数构建源列表
+  let sources = []
+  
+  if (source === 'gitee') {
+    // 仅使用 Gitee
+    sources = [
+      `https://gitee.com/${config.gitee.owner}/${config.gitee.repo}/raw/${config.gitee.branch}/${filePath}`
+    ]
+  } else if (source === 'github') {
+    // 仅使用 GitHub
+    sources = [
+      `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`,
+      `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`,
+      `https://raw.gitmirror.com/${owner}/${repo}/${branch}/${filePath}`
+    ]
+  } else {
+    // 自动选择：GitHub 优先，然后 GitHub 代理，最后 Gitee
+    sources = [
+      `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`,
+      `https://ghp.ci/https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`,
+      `https://raw.gitmirror.com/${owner}/${repo}/${branch}/${filePath}`,
+      `https://gitee.com/${config.gitee.owner}/${config.gitee.repo}/raw/${config.gitee.branch}/${filePath}`
+    ]
+  }
 
   for (const url of sources) {
     try {
@@ -147,21 +186,25 @@ async function downloadFile(owner, repo, branch, filePath, savePath, token = nul
   }
 
   // 如果所有来源都失败，尝试使用 GitHub API
-  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`
-  try {
-    const response = await instance.get(apiUrl)
+  if (source !== 'gitee') {
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`
+    try {
+      const response = await instance.get(apiUrl)
 
-    const dir = path.dirname(savePath)
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
+      const dir = path.dirname(savePath)
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true })
+      }
+
+      const content = Buffer.from(response.data.content, 'base64')
+      fs.writeFileSync(savePath, content)
+      return true
+    } catch (error) {
+      throw new Error(`下载失败：${filePath}`)
     }
-
-    const content = Buffer.from(response.data.content, 'base64')
-    fs.writeFileSync(savePath, content)
-    return true
-  } catch (error) {
-    throw new Error(`下载失败：${filePath}`)
   }
+
+  throw new Error(`下载失败：${filePath}`)
 }
 
 /**
@@ -169,9 +212,9 @@ async function downloadFile(owner, repo, branch, filePath, savePath, token = nul
  * @param {object} options
  * @returns {Promise<string>} 安装路径
  */
-async function downloadPlugin({ owner, repo, branch, pluginName, targetDir, token = null, onProgress = null }) {
+async function downloadPlugin({ owner, repo, branch, pluginName, targetDir, token = null, onProgress = null, source = null }) {
   // 从仓库获取 manifest
-  const manifest = await fetchManifest({ owner, repo, branch, token, onProgress })
+  const manifest = await fetchManifest({ owner, repo, branch, token, onProgress, source })
 
   // 检查插件是否存在
   const pluginInfo = manifest.plugins[pluginName]
@@ -198,7 +241,7 @@ async function downloadPlugin({ owner, repo, branch, pluginName, targetDir, toke
     const filePath = typeof file === 'object' ? file.path : file
     const downloadPath = `uni_modules/${pluginName}/${filePath}`
     const savePath = path.join(installDir, filePath)
-    await downloadFile(owner, repo, branch, downloadPath, savePath, token)
+    await downloadFile(owner, repo, branch, downloadPath, savePath, token, null, source)
 
     downloaded++
     if (onProgress) {
@@ -219,7 +262,7 @@ async function downloadPlugin({ owner, repo, branch, pluginName, targetDir, toke
       // 从仓库下载（路径为 uni_modules/pluginName/_external/source）
       const repoPath = `uni_modules/${pluginName}/_external/${extFile.source}`
       try {
-        await downloadFile(owner, repo, branch, repoPath, localPath, token)
+        await downloadFile(owner, repo, branch, repoPath, localPath, token, null, source)
       } catch (error) {
         if (onProgress) {
           onProgress(`外部文件下载失败: ${repoPath}`)
@@ -271,8 +314,8 @@ function getPluginInfo(pluginPath) {
  * @param {object} options
  * @returns {Promise<object[]>} 插件信息列表
  */
-async function listRemotePlugins({ owner, repo, branch, token = null }) {
-  const manifest = await fetchManifest({ owner, repo, branch, token })
+async function listRemotePlugins({ owner, repo, branch, token = null, source = null }) {
+  const manifest = await fetchManifest({ owner, repo, branch, token, source })
 
   return Object.entries(manifest.plugins).map(([name, info]) => ({
     name,
